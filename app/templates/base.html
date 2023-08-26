@@ -1,0 +1,12 @@
+{% extends 'bootstrap/base.html' %}
+
+{% block title %}Recipe Blog{% endblock %}
+
+{% block style %}
+  {{  super()  }}
+  <link rel="style-sheet" href="{{  url_for('static', filename='styles.css')  }}">
+{% endblock %}
+
+{% block content %}
+  {% block page_content %}{% endblock %}
+{% endblock %}
