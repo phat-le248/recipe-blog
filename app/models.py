@@ -40,6 +40,7 @@ class User(db.Model):
     username = db.Column(db.String(32), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
     mail = db.Column(db.String(64), unique=True, nullable=False)
+    confirm_day = db.Column(db.Integer, default=7)
     role_id = db.Column(db.Integer, db.ForeignKey("roles.id"))
     name = db.Column(db.String(64))
     location = db.Column(db.String(64))

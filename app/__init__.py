@@ -6,7 +6,7 @@ from ..config import config
 
 db = SQLAlchemy()
 bootstrap = Bootstrap()
-migrate = Migrate()
+migrate = Migrate(db=db)
 
 
 def create_app(config_name):
@@ -15,7 +15,8 @@ def create_app(config_name):
 
     db.init_app(app)
     bootstrap.init_app(app)
-    migrate.init_app(app, db)
+    migrate.init_app(app)
+    from . import models
 
     from .index import index
 
