@@ -1,6 +1,9 @@
 from datetime import datetime
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import AnonymousUserMixin, UserMixin
+from flask_wtf.csrf import hashlib
+from werkzeug.security import generate_password_hash
 from . import db
+from . import login_manager
 
 
 class Follow(db.Model):
@@ -26,7 +29,6 @@ class Modifying(db.Model):
         modified_recipe = Recipe(
             modified_name,
             modifier,
-            [i.ingredient for i in origin.ingredients.all()],
             origin.how_to,
         )
         db.session.add(modified_recipe)
@@ -34,18 +36,61 @@ class Modifying(db.Model):
         self.new_recipe_id = Recipe.query.filter_by(name=modified_name).first().id
 
 
-class User(db.Model):
+class SaveRecipe(db.Model):
+    __tablename__ = "save_recipes"
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
+    recipe_id = db.Column(db.Integer, db.ForeignKey("recipes.id"), primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __init__(self, user, recipe):
+        if user:
+            self.user_id = user.id
+        if recipe:
+            self.recipe_id = recipe.id
+
+
+class SaveMenu(db.Model):
+    __tablename__ = "save_menus"
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
+    menu_id = db.Column(db.Integer, db.ForeignKey("menus.id"), primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __init__(self, user, menu):
+        if user:
+            self.user_id = user.id
+        if menu:
+            self.recipe_id = menu.id
+
+
+class User(db.Model, UserMixin):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(32), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
     mail = db.Column(db.String(64), unique=True, nullable=False)
+    register_since = db.Column(db.DateTime, default=datetime.utcnow)
     confirm_day = db.Column(db.Integer, default=7)
+    is_locked = db.Column(db.Boolean, default=False)
     role_id = db.Column(db.Integer, db.ForeignKey("roles.id"))
     name = db.Column(db.String(64))
     location = db.Column(db.String(64))
     about_me = db.Column(db.Text)
+    mail_hashing = db.Column(db.String(128))
     recipes = db.relationship("Recipe", backref="author", lazy="dynamic")
+    saved_recipes = db.relationship(
+        "SaveRecipe",
+        foreign_keys=[SaveRecipe.user_id],
+        backref=db.backref("saved_user", lazy="joined"),
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
+    saved_menus = db.relationship(
+        "SaveMenu",
+        foreign_keys=[SaveMenu.user_id],
+        backref=db.backref("saved_user", lazy="joined"),
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
     menus = db.relationship("Menu", backref="owner", lazy="dynamic")
     comments = db.relationship("Comment", backref="author", lazy="dynamic")
     followed = db.relationship(
@@ -78,26 +123,28 @@ class User(db.Model):
     def password(self, password):
         self.password_hash = generate_password_hash(password)
 
-    def verify_password(self, password):
-        return check_password_hash(self.password_hash, password)
+    def __init__(self, **kwargs):
+        for kwarg in kwargs:
+            setattr(self, kwarg, kwargs[kwarg])
+
+        default_role = Role.query.filter_by(default=True).first()
+        if self.role_id is None:
+            self.role_id = default_role.id
 
     def can(self, permission):
-        return self.role.has_permission(permission)
+        return self.role.permissions & permission == permission
 
     def is_admin(self):
-        return self.role.has_permission(Permissions.ADMIN)
+        return self.can(Permissions.ADMIN)
 
-    def follow(self, followed):
-        if not self.is_following(followed):
-            f = Follow(follower=self, followed=followed)
-            db.session.add(f)
-            db.session.commit()
+    def hashing_mail(self):
+        return hashlib.md5(self.mail.encode()).hexdigest()
 
-    def unfollow(self, followed):
-        f = Follow.query.filter_by(follower_id=self.id, followed_id=followed.id).first()
-        if f:
-            db.session.delete(f)
-            db.session.commit()
+    def gravatar(self, size):
+        if not self.mail_hashing:
+            self.mail_hashing = self.hashing_mail()
+        url = "https://www.gravatar.com/avatar"
+        return f"{url}/{self.mail_hashing}?s={size}&d=identicon&r=g"
 
     def is_following(self, followed):
         if followed.id is None:
@@ -112,12 +159,20 @@ class User(db.Model):
         return f is not None
 
 
-class RecipeIngredient(db.Model):
-    ingredient_id = db.Column(
-        db.Integer, db.ForeignKey("ingredients.id"), primary_key=True
-    )
-    recipe_id = db.Column(db.Integer, db.ForeignKey("recipes.id"), primary_key=True)
-    amount = db.Column(db.String(32))
+@login_manager.user_loader
+def user_loader(id):
+    return User.query.get(int(id))
+
+
+class AnonymousUser(AnonymousUserMixin):
+    def can(self, permissions):
+        return False
+
+    def is_admin(self):
+        return False
+
+
+login_manager.anonymous_user = AnonymousUser
 
 
 class Recipe(db.Model):
@@ -127,14 +182,12 @@ class Recipe(db.Model):
     author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     posted_timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     modified_timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    ingredients = db.relationship(
-        "RecipeIngredient",
-        foreign_keys=[RecipeIngredient.recipe_id],
-        backref=db.backref("recipe", lazy="joined"),
-        lazy="dynamic",
-        cascade="all, delete-orphan",
-    )
+    image_url = db.Column(db.Text)
+    ingredients = db.Column(db.Text)
+    ingredients_html = db.Column(db.Text)
     how_to = db.Column(db.Text)
+    how_to_html = db.Column(db.Text)
+    disable = db.Column(db.Boolean, default=False)
     comments = db.relationship("Comment", backref="commented_recipe", lazy="dynamic")
     modifiers = db.relationship(
         "Modifying",
@@ -143,37 +196,17 @@ class Recipe(db.Model):
         lazy="dynamic",
         cascade="all, delete-orphan",
     )
-
-    def __init__(self, name, author=None, ingredients=[], how_to=""):
-        self.name = name
-        if author:
-            self.author_id = author.id
-        for ingredient in ingredients:
-            self.add_ingredient(ingredient)
-        self.how_to = how_to
-
-    def add_ingredient(self, ingredient):
-        i = RecipeIngredient(recipe=self, ingredient=ingredient)
-        db.session.add(i)
-
-    def modify(self, modifier):
-        modifying = Modifying(self, modifier)
-        db.session.add(modifying)
-        db.session.commit()
-
-
-class Ingredient(db.Model):
-    __tablename__ = "ingredients"
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), unique=True)
-    image_url = db.Column(db.String(128))
-    used_in = db.relationship(
-        "RecipeIngredient",
-        foreign_keys=[RecipeIngredient.ingredient_id],
-        backref=db.backref("ingredient", lazy="joined"),
+    saved_users = db.relationship(
+        "SaveRecipe",
+        foreign_keys=[SaveRecipe.recipe_id],
+        backref=db.backref("recipe", lazy="joined"),
         lazy="dynamic",
         cascade="all, delete-orphan",
     )
+
+    def is_saved(self, user_id):
+        saving = SaveRecipe.query.filter_by(user_id=user_id, recipe_id=self.id).first()
+        return saving is not None
 
 
 in_menu = db.Table(
@@ -187,8 +220,16 @@ class Menu(db.Model):
     __tablename__ = "menus"
     id = db.Column(db.Integer, primary_key=True)
     owner_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     day_count = db.Column(db.Integer)
     day_menus = db.relationship("DayMenu", backref="menu", lazy="dynamic")
+    saved_users = db.relationship(
+        "SaveMenu",
+        foreign_keys=[SaveMenu.menu_id],
+        backref=db.backref("menu", lazy="joined"),
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
 
     def __init__(self, owner=None, day_count=None):
         if owner:
@@ -199,8 +240,8 @@ class Menu(db.Model):
 class DayMenu(db.Model):
     __tablename__ = "day_menus"
     id = db.Column(db.Integer, primary_key=True)
-    menu_id = db.Column(db.Integer, db.ForeignKey("menus.id"), unique=True)
-    for_day = db.Column(db.Integer, unique=True)
+    menu_id = db.Column(db.Integer, db.ForeignKey("menus.id"))
+    for_day = db.Column(db.Integer)
     recipes = db.relationship(
         "Recipe",
         secondary=in_menu,
@@ -208,11 +249,13 @@ class DayMenu(db.Model):
         lazy="dynamic",
     )
 
-    def __init__(self, menu=None, recipes=[]):
+    def __init__(self, menu=None, for_day=None, recipes=[]):
         if menu:
             self.menu_id = menu.id
             created_menus_count = DayMenu.query.filter_by(menu_id=menu.id).count()
             self.for_day = min(menu.day_count, created_menus_count + 1)
+        if for_day:
+            self.for_day = for_day
         for recipe in recipes:
             self.recipes.append(recipe)
 
@@ -223,6 +266,8 @@ class Comment(db.Model):
     author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     recipe_id = db.Column(db.Integer, db.ForeignKey("recipes.id"))
     body = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    disable = db.Column(db.Boolean, default=False)
 
     def __init__(self, author=None, recipe=None, body=""):
         if author:
@@ -245,17 +290,8 @@ class Role(db.Model):
         if self.permissions == None:
             self.permissions = 0
 
-    def has_permission(self, permission):
-        return self.permissions & permission == permission
-
-    def add_permission(self, permission):
-        self.permissions += permission
-
-    def remove_permission(self, permission):
-        self.permissions -= permission
-
-    def reset_permission(self):
-        self.permissions = 0
+    def add_permission(self, perm):
+        self.permissions += perm
 
     @staticmethod
     def insert_roles():
@@ -293,3 +329,9 @@ class Permissions:
     WRITE = 4
     MODERATE = 8
     ADMIN = 16
+
+
+from .services import RecipeService
+
+db.event.listen(Recipe.ingredients, "set", RecipeService.on_update_ingredients)
+db.event.listen(Recipe.how_to, "set", RecipeService.on_update_howto)

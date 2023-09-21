@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block head %}
+  {{  super()  }}
+  {{  moment.include_moment()  }}
+{% endblock %}
+
+{% block page_title %}{{  recipe.name  }}{% endblock %}
+
+{% block page_content %}
+<!-- Recipe header -->
+<div class="row">
+  <div class="col-md-4">
+  <!-- Recipe info -->
+  <h1>{{  recipe.name }}</h1>
+  <p>By <a href="{{  url_for('index.user', username=recipe.author.username)  }}">
+    <strong>{{  recipe.author.username  }}</strong>
+  </a></p>
+  <p>Posted on <strong>{{  moment(recipe.posted_timestamp).format('LL')  }}</strong></p>
+  <p><span class="glyphicon glyphicon-heart"></span> <strong>{{  recipe.saved_users.count()  }}</strong> people saved this recipe</p>
+  {% if current_user.is_authenticated and current_user.id == recipe.author.id %}
+    <a class="btn btn-default" href="{{  url_for('index.edit_recipe', id=recipe.id)  }}">Edit recipe</a>
+  {% endif %}
+  </div>
+  <div class="col-md-8 post-img-container">
+  <!-- Recipe image: best size is 760x367 -->
+    <img src="{{  recipe.image_url  }}" alt="Recipe Image" class="img-responsive">
+  </div>
+</div>
+<!-- Recipe content -->
+<div class="row">
+  <div class="col-md-6">
+  <!-- Ingredients -->
+  <h2>Ingredients</h2>
+
+  {% if recipe.ingredients_html %}
+    {{  recipe.ingredients_html | safe  }}
+  {% else %}
+    {{  recipe.ingredients  }}
+  {% endif %}
+
+  </div>
+  <div class="col-md-6">
+  <!-- Instructions -->
+    <h2>Instructions</h2>
+
+    {% if recipe.how_to_html %}
+      {{  recipe.how_to_html | safe  }}
+    {% else %}
+      {{  recipe.how_to  }}
+    {% endif %}
+
+  </div>
+</div>
+<h3 id="comments">Comments</h3>
+{% if current_user.is_authenticated %}
+  {{  wtf.quick_form(form)  }}
+{% endif %}
+{% include "components/_comments.html" %}
+{% import 'components/_pagination_widget.html' as widget %}
+{{  widget.pagination('index.recipe', pagination, id=recipe.id, fragment="#comment")  }}
+{% endblock %}

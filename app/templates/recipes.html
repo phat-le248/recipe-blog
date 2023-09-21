@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Saved Recipes{% endblock %}
+
+{% block page_content %}
+  <h3>Saved Recipes</h3>
+  {% include 'components/_recipes.html' %}
+  {% import 'components/_pagination_widget.html' as widget %}
+  {{  widget.pagination('index.saved_recipes', pagination)  }}
+{% endblock %}

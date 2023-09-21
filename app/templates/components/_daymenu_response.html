@@ -1,0 +1,30 @@
+{% for menu in menus %}
+<div class="panel panel-default" id="menu-{{  loop.index  }}">
+    <div class="panel-heading">
+      <h3 class="panel-title">Menu day {{  loop.index  }}</h3>
+      <div class="remove-menu-btn label label-danger" onclick="remove_menu({{  loop.index  }})" title="Remove Menu">
+        <span class="glyphicon glyphicon-minus"></span>
+      </div>
+    </div>
+    <div class="panel-body">
+      {% if not menu %}
+      <span style="color:grey;">Menu's empty. Search recipe to add some</span>
+      {% else %}
+        {% set recipes=menu %}
+        {% set in_menus=True %}
+        {% set current_menu=loop.index %}
+        {% include 'components/_recipes.html' %}
+      {% endif %}
+      <br>
+      <div class="day-menu-opts" style="float:right;" onclick="toggle_btn(this)" id={{  loop.index  }}>
+        {% if editing==loop.index %}
+          <div class="invisible-btn label label-danger">Edit</div>
+          <div class="label label-success">Save</div>
+        {% else %}
+          <div class="label label-danger">Edit</div>
+          <div class="invisible-btn label label-success">Save</div>
+        {% endif %}
+      </div>
+    </div>
+</div>
+{% endfor %}

@@ -1,0 +1,35 @@
+
+{% macro pagination(endpoint, pagination, fragment='') %}
+  {% if pagination %}
+  <ul class="pagination">
+    {% if pagination.has_prev %}
+      <li class="disable">
+        <a href="{{  url_for(endpoint, page=pagination.page - 1, **kwargs)  }}{{  fragment  }}">&laquo;</a>
+      </li>
+    {% endif %}
+    {% for p in pagination.iter_pages() %}
+      {% if p %}
+        {% if p == pagination.page %}
+          <li class="active">
+            <a href="{{  url_for(endpoint, page=p, **kwargs)  }}{{  fragment  }}">{{  p  }}</a>
+          </li>
+        {% else %}
+          <li class="disable">
+            <a href="{{  url_for(endpoint, page=p, **kwargs)  }}{{  fragment  }}">{{  p  }}</a>
+          </li>
+        {% endif %}
+      {% else %}
+        <li class="disable">
+          <a>&hellip;</a>
+        </li> 
+      {% endif %}
+    {% endfor %}
+
+    {% if pagination.has_next %}
+      <li class="disable">
+        <a href="{{  url_for(endpoint, page=pagination.page + 1, **kwargs)  }}{{  fragment  }}">&raquo;</a>
+      </li>
+    {% endif %}
+  </ul>
+  {% endif %}
+{% endmacro %}

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Home{% endblock %}
+
+{% block page_content %}
+  <h3>Recipes</h3>
+  {% if current_user.is_authenticated %}
+  <div class="create-btns">
+    <div class="btn-group">
+      <button type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <span class="glyphicon glyphicon-plus"></span>
+        <span class="create-btns-describe">Create yours now <span class="caret"></span></span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-right">
+        <li>
+          <a href="{{  url_for('index.create_menu')  }}">Create menu</a>
+        </li>
+        <li>
+          <a href="{{  url_for('index.create_recipe')  }}">Create recipe</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+  
+  
+  {% endif %}
+  {% include "components/_recipes.html" %}
+  {% import 'components/_pagination_widget.html' as widget %}
+  {{  widget.pagination('index.home', pagination)  }}
+{% endblock %}

@@ -1,0 +1,89 @@
+<ul class="posts">
+    {% for recipe in recipes %}
+    {% if not recipe.disable or current_user.can(Permissions.MODERATE) and not in_search and not in_menus %}
+    <li class="post">
+        {% if not in_search %}
+        <a href="{{  url_for('index.recipe', id=recipe.id)  }}" class="post-link"></a>
+        {% endif %}
+        <div class="recipe-post-thumbnail">
+            <a href="{{  url_for('index.recipe', id=recipe.id)  }}">
+              <img class="img-rounded" src="{{  recipe.image_url  }}" alt="Recipe Image">
+            </a>
+        </div>
+        <div class="recipe-post-content">
+            {% if not in_menus %}
+              <div class="post-date">{{  moment(recipe.posted_timestamp).fromNow()  }}</div>
+            <div class="post-author">
+              <a href="{{  url_for('index.user', username=recipe.author.username)  }}">{{  recipe.author.username  }}</a>
+            </div>
+            {% endif %}
+            <div class="recipe-post-body">
+              {{  recipe.name  }}
+            </div>
+              {% if recipe.disable %}
+                <p><i>This recipe has been disable by moderator.</i><p>
+              {% endif %}
+              {% if moderate %}
+              <br>
+                {% if recipe.disable %}
+              <a class="btn btn-default btn-xs" href="{{  url_for('index.enable_recipe', id=recipe.id)  }}">Enable</a>
+                {% else %}
+              <a class="btn btn-danger btn-xs" href="{{  url_for('index.disable_recipe', id=recipe.id)  }}">Disable</a>
+                {% endif %}
+              {% endif %}
+
+            {% if current_user.is_authenticated %}
+              {% if not in_search and not in_menus %}
+            <div class="btn-group dropup post-footer">
+              <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="glyphicon glyphicon-cog"></span>
+                <span class="sr-only">Toggle Recipe Dropdown</span>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-right">
+                  {% if not recipe.is_saved(current_user.id) %}
+                <li><a href="{{  url_for('index.user_save_recipe', id=recipe.id)  }}">
+                    Save Recipe
+                </a></li>
+                  {% else %}
+                <li><a href="{{  url_for('index.user_unsave_recipe', id=recipe.id)  }}">
+                    Unsave Recipe
+                </a></li>
+                  {% endif %}
+                {% if current_user.id == recipe.author.id  %}
+                <li><a href="{{  url_for('index.edit_recipe', id=recipe.id)  }}">
+                    Edit
+                </a></li>
+                {% endif %}
+                {% if current_user.is_admin() %}
+                <li><a href="{{  url_for('index.edit_recipe_admin', id=recipe.id)  }}">
+                    Edit [Admin]
+                </a></li>
+                {% endif %}
+                <!-- <a href="{{  url_for('index.recipe', id=recipe.id)  }}#comments"> -->
+                <!--   <span class="label label-primary">{{  recipe.comments.count()  }} Comments</span> -->
+                <!-- </a> -->
+              </ul>
+            </div>
+              {% endif %}
+            {% endif %}
+
+            {% if in_search or in_menus %}
+            {% if in_search %}
+            <div class="add-recipe-btn" onclick="add_recipe('{{  recipe.name  }}')">
+              <span class="glyphicon glyphicon-plus"></span>
+            </div>
+            {% elif editing==current_menu %}
+            <div class="remove-recipe-btn" onclick="remove_recipe('{{  recipe.name  }}')">
+              <span class="glyphicon glyphicon-minus"></span>
+            </div>
+            {% elif editing==0 or in_menus %}
+            <div class="remove-recipe-btn invisible-btn" onclick="remove_recipe('{{  recipe.name  }}')">
+              <span class="glyphicon glyphicon-minus"></span>
+            </div>
+            {% endif %}
+            {% endif %}
+        </div>
+    </li>
+    {% endif %}
+    {% endfor %}
+  </ul>

@@ -5,7 +5,7 @@ from ..app.models import (
     Recipe,
     Menu,
     Comment,
-    Ingredient,
+    # Ingredient,
     DayMenu,
     Role,
     Permissions,
@@ -86,19 +86,24 @@ class TestUser(TestModel):
 
 class TestRecipe(TestModel):
     def test_add_recipe(self):
-        fish = create_obj(Ingredient, ingredients_info[0])
-        self.assertTrue(fish is not None)
+        # fish = create_obj(Ingredient, ingredients_info[0])
+        # self.assertTrue(fish is not None)
 
         author = create_obj(User, users_info[0], password="password")
-        recipe = create_obj(Recipe, recipes_info[0], author=author, ingredients=[fish])
+        recipe = create_obj(
+            Recipe,
+            recipes_info[0],
+            author=author,
+            # ingredients=[fish]
+        )
         self.assertTrue(recipe is not None)
         self.assertTrue(author.recipes.count() == 1) if author else self.fail()
 
-        if recipe:
-            ingredient = recipe.ingredients[0].ingredient
-            self.assertTrue(ingredient.name == "fish")
-        else:
-            self.fail()
+        # if recipe:
+        #     ingredient = recipe.ingredients[0].ingredient
+        #     self.assertTrue(ingredient.name == "fish")
+        # else:
+        #     self.fail()
 
     def test_add_modifier(self):
         author = create_obj(User, users_info[0], password="password")

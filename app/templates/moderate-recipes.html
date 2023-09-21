@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Moderate Recipes{% endblock %}
+
+{% block page_content %}
+  <h3>Moderate Recipes</h3>
+  {% set moderate=True %}
+  {% include 'components/_recipes.html' %}
+  {% import 'components/_pagination_widget.html' as widget %}
+  {{  widget.pagination('index.moderate_recipes', pagination)  }}
+{% endblock %}

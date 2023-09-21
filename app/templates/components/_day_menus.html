@@ -1,0 +1,11 @@
+{% for day_menu in menu.day_menus %}
+  {% set recipes = day_menu.recipes %}
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h3 class="panel-title">Day {{  day_menu.for_day  }}</h3>
+    </div>
+    <div class="panel-body">
+      {% include 'components/_recipes.html' %}
+    </div>
+  </div>
+{% endfor %}

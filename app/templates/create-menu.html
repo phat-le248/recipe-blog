@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block head %}
+  {{  super()  }}
+{% endblock %}
+
+{% block page_title %}Create Menu{% endblock %}
+
+{% block page_content %}
+  {% include 'components/_search_bar.html' %}
+
+  <br>
+  <button id="menu-add-btn" class="btn btn-success">
+    <span class="glyphicon glyphicon-plus"></span> Add menu
+  </button>
+  <br><br>
+  <div id="day-menus">
+    {% include 'components/_daymenu_response.html' %}
+  </div>
+  {% if edit_menu %}
+  <div class="btn btn-success save-menu-btn">
+    <a href="{{  url_for('.update_menu', id=edit_menu)  }}">Save Changes</a>
+  </div>
+  {% else %}
+  <div class="btn btn-success save-menu-btn">
+    <a href="{{  url_for('.save_menu')  }}">Save Menu</a>
+  </div>
+  {% endif %}
+  <script src="{{  url_for('static', filename='create-menu.js')  }}"></script> 
+{% endblock %}
+

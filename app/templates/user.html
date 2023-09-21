@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block head %}
+  {{  super()  }}
+  {{  moment.include_moment()  }}
+{% endblock %}
+
+{% block page_title %}{{  user.username  }}{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <img class="img-rounded profile-thumbnail" src="{{  user.gravatar(size=256)  }}">
+    <div class="profile-header">
+        <h1>{{  user.username  }}</h1>
+        {% if user.name or user.location %}
+        <p>
+          {{  user.name  }} </br>
+          from <a href="http://maps.google.com/?q={{  user.location  }}">{{  user.location  }}</a><br>
+        </p>
+        {% endif %}
+        {% if current_user.is_admin() %}
+        <p><a href="mailto:{{  user.mail  }}">{{  user.mail  }}</a></p>
+        {% endif %}
+        <p>Member since {{  moment(user.register_since).format('LL')  }}</p>
+        <p>{{  user.recipes.count()  }} recipe posts. {{  user.comments.count()  }} comments.</p>
+        <p>
+          {% if user.id != current_user.id %}
+            {% if current_user.is_authenticated and not current_user.is_following(user) %}
+            <a href="{{  url_for('index.follow', user_id=user.id)  }}" class="btn btn-primary">Follow</a>
+            {% else %}
+            <a href="{{  url_for('index.unfollow', user_id=user.id)  }}" class="btn btn-default">Unfollow</a>
+            {% endif %}
+          {% endif %}
+            <a class="followers-link" href="{{  url_for('index.followed', username=user.username)  }}">Following: <span class="badge">{{  user.followed.count()  }}</span></a>
+            <a href="{{  url_for('index.following', username=user.username)  }}">Followers: <span class="badge">{{  user.followers.count()  }}</span></a>
+            {% if user.is_following(current_user) %}
+            | <span class="label label-default">Follows you</span>
+            {% endif %}
+        </p>
+        <p>
+            {% if user.id == current_user.id %}
+            <a class="btn btn-default" href="{{  url_for('index.edit_user')  }}">Edit Profile</a>
+            {% endif %}
+            {% if current_user.is_admin() %}
+            <a class="btn btn-danger btn-margin-top" href="{{  url_for('index.edit_user_admin', id=user.id)  }}">Edit Profile [Admin]</a>
+            {% endif %}
+        </p>
+    </div>
+</div>
+<h3>Recipes by {{  user.username  }}</h3>
+{% include "components/_recipes.html" %}
+{% import 'components/_pagination_widget.html' as widget %}
+{{  widget.pagination('index.user', pagination, username=user.username)  }}
+{% endblock %}

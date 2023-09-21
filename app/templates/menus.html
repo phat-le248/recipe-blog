@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Your Menus{% endblock %}
+
+{% block page_content %}
+<h3>Your Menus</h3>
+<ul class="posts">
+  {% for menu in menus %}
+    <li class="post">
+      <a href="{{  url_for('index.day_menu', menu_id=menu["menu"].id)  }}" class="post-link"></a>
+      <div class="post-thumbnail">
+        <a href="{{  url_for('.user', username=menu["menu"].owner.username)  }}">
+          <img class="img-rounded" src="{{  menu["menu"].owner.gravatar(size=40)  }}">
+        </a>
+      </div>
+      <div class="post-content">
+        <div class="post-date-menu">
+          {% if current_user == menu["menu"].owner %}You created {% else %}You saved {% endif %} <br>
+          {{  moment(menu["timestamp"]).fromNow() }}
+        </div>
+        <div class="post-author">
+          <a href="{{  url_for('.user', username=menu["menu"].owner.username)  }}">{{  menu["menu"].owner.username  }}</a>
+        </div>
+        <div class="post-body">
+          Menu for {{  menu["menu"].day_count  }} days
+        </div>
+
+        <div class="post-footer">
+          {% if menu["menu"].owner.id == current_user.id %}
+          <a href="{{  url_for('.edit_menu', id=menu["menu"].id)  }}">
+            <span class="label label-primary">Edit</span>
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </li>
+  {% endfor %}
+</ul>
+{% endblock %}

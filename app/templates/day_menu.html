@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Menu{% endblock %}
+
+{% block page_content %}
+  <h3>Menu for {{  menu.day_count  }} days</h3>
+  <h4>Author: 
+    <a href="{{  url_for('index.user', username=menu.owner.username)  }}">{{  menu.owner.username  }}</a>
+  </h4>
+  <div class="btn btn-default btn-margin-top">
+    <a href="{{  url_for('.edit_menu', id=menu.id)  }}">Edit Menu</a>
+  </div>
+  <br>
+  {% include 'components/_day_menus.html' %}
+{% endblock %}
