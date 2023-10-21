@@ -3,6 +3,8 @@
 ## 1. Description
 This is a complete function recipe blog where you can share your recipes and create menus. No more struggling to think what to eat each day, Recipe Blog got you cover
 
+![ui-img](https://i.postimg.cc/jjZ1yfZD/ezgif-com-gif-maker.gif)
+
 ## 2. Install and run
 - Clone project and set up enviroment
 
