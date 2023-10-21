@@ -23,12 +23,12 @@ class Config:
 
 
 class DevelopmentConfig(Config):
-    SQLALCHEMY_DATABASE_URI = "mysql://root:letmein@localhost/recipeblog_dev"
+    SQLALCHEMY_DATABASE_URI = "mysql://root:password@localhost/recipeblog_dev"
 
 
 class TestingConfig(Config):
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = "mysql://root:letmein@localhost/recipeblog_test"
+    SQLALCHEMY_DATABASE_URI = "mysql://root:password@localhost/recipeblog_test"
 
 
 config = {

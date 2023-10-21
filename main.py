@@ -16,6 +16,12 @@ def test():
     unittest.TextTestRunner(verbosity=2).run(tests)
 
 
+@app.cli.command("setup")
+def setup():
+    db.create_all()
+    Role.insert_roles()
+
+
 @app.shell_context_processor
 def make_shell_context():
     return dict(db=db, role=Role, fake=fake)
